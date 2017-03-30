@@ -1,5 +1,5 @@
 
-CUDA_VERSION=8.0
+CUDA_VERSION=7.5
 
 CXX=g++
 CC=$(CXX)
@@ -16,7 +16,7 @@ CUDA_LIBS=/usr/local/pkg/cuda/$(CUDA_VERSION)/lib64
 #The code will look for a folder named cub here, you can create a symlink if you have a folder i.e. cub-1.5.2
 CUB_INCLUDE=/sibm/fbalboa/sfw/cub/1.6.4
 
-ARCH ?= 52 #35
+ARCH ?= 35 #35
 
 #You can place your custom files either here or below in the diferent OBJS_*/CUOBJS_* variables. Dont forget the folders if you put it here!
 #These will be compiled with $(CXX)
