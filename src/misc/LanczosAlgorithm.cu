@@ -1,8 +1,9 @@
 
-#include"LanczosAlgorithm.cuh"
+#include "LanczosAlgorithm.cuh"
 #include <nvToolsExt.h>
-#include<lapacke.h>
-#include<fstream>
+// #include <lapacke.h>
+#include "/sibm/fbalboa/sfw/blue/lapack/3.6.1/include/lapacke.h"
+#include <fstream>
 
 void LanczosAlgorithm::init(){
   /*Init cuSolver and cuBLAS for Lanczos process*/

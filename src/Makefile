@@ -3,18 +3,18 @@ CUDA_VERSION=8.0
 
 CXX=g++
 CC=$(CXX)
-NVCC=/usr/local/cuda-$(CUDA_VERSION)/bin/nvcc
+NVCC=/usr/local/pkg/cuda/$(CUDA_VERSION)/bin/nvcc
 
 #EXPERIMENTAL=1  #Uncomment to compile with experimental modules
 
 ###############################Put here your system configuration:#####################################
 
 #the code will look here for the cuda and thrust sources
-CUDA_INCLUDE=/usr/local/cuda-$(CUDA_VERSION)/include
+CUDA_INCLUDE=/usr/local/pkg/cuda/$(CUDA_VERSION)/include
 #The place where the cuda libs are, libcuda.so, libcudart, libcurand..
-CUDA_LIBS=/usr/local/cuda-$(CUDA_VERSION)/lib64
+CUDA_LIBS=/usr/local/pkg/cuda/$(CUDA_VERSION)/lib64
 #The code will look for a folder named cub here, you can create a symlink if you have a folder i.e. cub-1.5.2
-CUB_INCLUDE=/usr/local/include
+CUB_INCLUDE=/sibm/fbalboa/sfw/cub/1.6.4
 
 ARCH ?= 52 #35
 
@@ -60,7 +60,7 @@ CFLAGS += -DEXPERIMENTAL
 endif
 
 
-CXXFLAGS=$(CFLAGS) -std=c++11 #-flto 
+CXXFLAGS=$(CFLAGS) -std=c++11 
 
 
 $(foreach sm,$(ARCH),$(eval GENCODE_FLAGS += -gencode arch=compute_$(sm),code=sm_$(sm)))
@@ -70,10 +70,17 @@ OPTIMGPU= -G -O0 -g
 else
 OPTIMGPU= -O3
 endif
-NVFLAGS= $(OPTIMGPU) -std=c++11  -ccbin=$(CXX)   --compiler-options='$(CFLAGS)' -lineinfo -m64 $(GENCODE_FLAGS) -src-in-ptx  $(INCLUDEFLAGS) -Xptxas -dlcm=cg #-Xptxas -warn-spills
+NVFLAGS= $(OPTIMGPU) -std=c++11  -ccbin=$(CXX)   --compiler-options='$(CFLAGS)' -lineinfo -m64 $(GENCODE_FLAGS) -src-in-ptx  $(INCLUDEFLAGS) -Xptxas -dlcm=cg 
+
 
 LDFLAGS= -L$(CUDA_LIBS)
-LDLIBS= -lcuda -lcudart -lpthread -lcurand -lcusolver -lcublas -lgfortran -lgomp -lnvToolsExt -lcufft -llapacke
+# LDLIBS= -lcuda -lcudart -lpthread -lcurand -lcusolver -lcublas -lgfortran -lgomp -lnvToolsExt -lcufft -llapacke 
+LDLIBS= -lcuda -lcudart -lpthread -lcurand -lcusolver -lcublas -lgfortran -lgomp -lnvToolsExt -lcufft -L/sibm/fbalboa/sfw/blue/lapack/3.6.1/lib64/liblapacke.so 
+
+# -DCBLAS_LIBRARIES=/sibm/fbalboa/sfw/blue/lapack/3.6.1/lib64/libcblas.so \
+# -DBLAS_LIBRARIES=/sibm/fbalboa/sfw/blue/lapack/3.6.1/lib64/libblas.so \
+# -DLAPACKE_LIBRARIES=/sibm/fbalboa/sfw/blue/lapack/3.6.1/lib64/liblapacke.so \
+# -DLAPACK_LIBRARIES=/sibm/fbalboa/sfw/blue/lapack/3.6.1/lib64/liblapack.so \
 
 
 OBJS_INTERACTOR_EXPERIMENTAL= PairForcesAlt.o

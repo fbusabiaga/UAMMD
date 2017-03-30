@@ -2,7 +2,7 @@
 all:
 	$(MAKE) -C src/ all -j5
 	mkdir -p bin
-	mv src/main  bin/uammd
+	mv src/uammd  bin/uammd
 clean:
 	rm -f bin/cudamd
 	$(MAKE) -C src/ clean
