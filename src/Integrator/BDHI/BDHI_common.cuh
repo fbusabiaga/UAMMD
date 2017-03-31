@@ -63,19 +63,32 @@ namespace BDHI{
     inline __device__ real3 zero(){ return make_real3(real(0.0));}
     inline __device__ real3 compute(const real4 &pi, const real4 &pj){
       real3 r12 = make_real3(pi)-make_real3(pj);
+
+      // box.apply_pbc(rij);
+      // Hardcode box length and its inverse
+      real3 L = make_real3(128, 128, 0);
+      real3 invL = make_real3(0.0078125, 0.0078125, 0);
+      r12 -= floorf(r12*invL+real(0.5))*L; //MIC Algorithm
+
       real r2 = dot(r12, r12);
       if(r2==real(0.0))
 	return make_real3(real(0.0));
-      /*TODO General for rh*/
       real invr = rsqrtf(r2);
-      if(r2>real(1.0)){
-	r2 *= real(4.0);
-	return make_real3(real(0.75)*real(2.0)*(r2-real(2.0))/(r2*r2)*r12*invr);
+      if(r2 > (rh*rh)){
+	return make_real3(real(0.75) * (r2 - real(2.0)*rh*rh) * rh / (r2 * r2) * r12 * invr);
       }
       else{
-	//return make_real3(0.0);
-	return make_real3(real(0.09375)*real(2.0)*r12*invr);
+	return make_real3(real(0.09375) / rh * r12 * invr);
       }
+      // real invr = rsqrtf(r2);
+      // if(r2>real(1.0)){
+      // 	r2 *= real(4.0);
+      // 	return make_real3(real(0.75)*real(2.0)*(r2-real(2.0))/(r2*r2)*r12*invr);
+      // }
+      // else{
+      // 	//return make_real3(0.0);
+      // 	return make_real3(real(0.09375)*real(2.0)*r12*invr);
+      // }
     }
     inline __device__ void accumulate(real3 &total, const real3 &cur){total += cur;}
     

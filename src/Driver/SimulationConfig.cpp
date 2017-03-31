@@ -47,17 +47,15 @@ SimulationConfig::SimulationConfig(int argc, char* argv[]): Driver(){
   /*See globals.h for a list of parameters*/
   /*If you set a parameter that the modules you use do not need, It will just be ignored. i.e. Setting gcnf.E and using VerletNVT*/
 
-  gcnf.T = 1.0;
-  
-  gcnf.L = make_real3(32);
-
-  
-  gcnf.N = pow(2,12);
-  gcnf.dt = 0.05;
-  
+  gcnf.T = 1.0; 
+  gcnf.L = make_real3(128, 128, 0);
+  gcnf.N = 1304;
+  gcnf.dt = 0.01;
+  gcnf.D2 = true;  
     
-  gcnf.nsteps1 = 174000;
-  gcnf.print_steps = 200;
+  gcnf.nsteps2 = 0;
+  gcnf.nsteps1 = 200000;
+  gcnf.print_steps = 100;
   gcnf.measure_steps = -1;
 
 
@@ -73,18 +71,19 @@ SimulationConfig::SimulationConfig(int argc, char* argv[]): Driver(){
   /*A random initial configuration*/
   fori(0,gcnf.N){
     pos[i] = make_real4(grng.uniform3(-gcnf.L.x/2.0, gcnf.L.x/2.0), 0);
+    pos[i].z = 0.;
   }
 
   /*Upload positions to GPU once the initial conditions are set*/
   pos.upload();
   
-  //integrator = make_shared<VerletNVT>();
+  // integrator = make_shared<VerletNVT>();
   real vis = 1;
   real rh = 1.0;
   Matrixf K(3,3);
   K.fill_with(0);
   //int niter = 4; //Number of Lanczos iterations
-  integrator = make_shared<BrownianHydrodynamicsEulerMaruyama>(K, vis, rh, PSE); //LANCZOS, niter);
+  integrator = make_shared<BrownianHydrodynamicsEulerMaruyama>(K, vis, rh, CHOLESKY); //LANCZOS, niter);
 
   /*Short range forces, with LJ potential if other is not provided*/
   // auto interactor = make_shared<PairForces<CellList>>();
@@ -107,6 +106,7 @@ SimulationConfig::SimulationConfig(int argc, char* argv[]): Driver(){
   /**Run nsteps1,
      passing true to this function will be considered as a relaxation run, and wont write to disk nor measure anything**/
   //  run(1000, true);  
+  cout << "#NUMBER PARTICLES " << gcnf.N << endl;
   run(gcnf.nsteps1);  
 
   // /*You can change the integrator at any time between calls to run*/
@@ -140,7 +140,8 @@ void Writer::write_concurrent(){
   real3 L = gcnf.L;
   uint N = gcnf.N;
   real4 *posdata = pos.data;
-  cout<<"#Lx="<<L.x*0.5f<<";Ly="<<L.y*0.5f<<";Lz="<<L.z*0.5f<<";\n";
+  // cout<< "#Lx="<<L.x*0.5f<<";Ly="<<L.y*0.5f<<";Lz="<<L.z*0.5f<<";\n";
+  cout << N << endl;
   fori(0,N){    
     uint type = (uint)(posdata[i].w+0.5);
     cout<<posdata[i].x<<" "<<posdata[i].y<<" "<<posdata[i].z<<" "<<1.0f<<" "<<type<<"\n";

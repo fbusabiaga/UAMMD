@@ -40,6 +40,11 @@ namespace Cholesky_ns{
     real c1, c2;
     for(int j=i+1; j<N; j++){	
       rij = make_real3(R[j]) - make_real3(R[i]);
+      // box.apply_pbc(rij);
+      // Hardcode box length and its inverse
+      real3 L = make_real3(128, 128, 0);
+      real3 invL = make_real3(0.0078125, 0.0078125, 0);
+      rij -= floorf(rij*invL+real(0.5))*L; //MIC Algorithm
       const real r = sqrt(dot(rij, rij));
       
       /*Rotne-Prager-Yamakawa tensor */
@@ -147,6 +152,9 @@ void Cholesky::computeBdW(real3 *BdW, cudaStream_t st){
   /*Perform cholesky factorization, store B on LOWER part of M matrix*/
   cusolverDnpotrf(solver_handle, CUBLAS_FILL_MODE_UPPER,
 		  3*N, M.d_m, 3*N, d_work, h_work_size, d_info);
+  status = cublasCreate(&handle);
+  if(status){cerr<<"ERROR with cusolverDnpotrf!!\n"<<endl; exit(1);}
+
   curandSetStream(curng, st);
   /*Gen new noise in BdW*/
   curandGenerateNormal(curng, (real*) BdW, 3*N + ((3*N)%2), real(0.0), real(1.0));
@@ -158,7 +166,7 @@ void Cholesky::computeBdW(real3 *BdW, cudaStream_t st){
 	     3*N,
 	     M.d_m, 3*N,
 	     (real*)BdW, 1);
-
+  if(status){cerr<<"ERROR with cublastrmv!!\n"<<endl; exit(1);}
 }
 
 void Cholesky::computeDivM(real3* divM, cudaStream_t st){

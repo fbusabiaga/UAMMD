@@ -25,26 +25,17 @@ SimulationConfig::SimulationConfig(int argc, char* argv[]): Driver(){
   /*If you set a parameter that the modules you use do not need, It will just be ignored. i.e. Setting gcnf.E and using VerletNVT*/
 
   gcnf.T = 1.0;
-
-  gcnf.L = make_real3(40, 40, 0);
-
-  gcnf.rcut = pow(2, 1/6.0); //cut off radius for WCA
-
-  gcnf.N = pow(2,10);
-  gcnf.dt = 0.005;
-
-
-  gcnf.nsteps1 = 100000;
-  gcnf.nsteps2 = 74000;
-  gcnf.print_steps = 500;  
+  gcnf.L = make_real3(128, 128, 0);
+  gcnf.N = 1304;
+  gcnf.dt = 0.01;
+  gcnf.nsteps1 = 0;
+  gcnf.nsteps2 = 200000;
+  gcnf.print_steps = 100;  
 
 
   gcnf.seed = 0xffaffbfDEADBULL^time(NULL);
-  pos = initLattice(gcnf.L, gcnf.N, sq); //Start in a square lattice
-
+  pos = initLattice(gcnf.L, gcnf.N, sq); // Start in a square lattice
   setParameters();
-
-  //fori(0,gcnf.N) pos[i] = make_real4(make_real3(pos[i])+10, 0);
 
   /*A random initial configuration*/
   // fori(0,gcnf.N){
@@ -55,37 +46,29 @@ SimulationConfig::SimulationConfig(int argc, char* argv[]): Driver(){
   /*Upload positions to GPU once the initial conditions are set*/
   pos.upload();
 
-  /*Short range forces, with LJ potential if other is not provided*/
-  auto interactor2 = make_shared<PairForces<CellList>>();
-
-
   /*Termalization integrator*/
-  integrator = make_shared<VerletNVT>();
-  integrator->addInteractor(interactor2);
-  
-
+  real vis = 1;
+  real rh = 1.0;
+  Matrixf K(3,3);
+  K.fill_with(0);
+  integrator = make_shared<BrownianHydrodynamicsEulerMaruyama>(K, vis, rh, CHOLESKY);
 
   cerr<<"Initialization time: "<<setprecision(5)<<tim.toc()<<"s"<<endl;
-
   tim.tic();
   /***************************Start of the simulation***************************/
-  /**Run nsteps1,
-     passing true to this function will be considered as a relaxation run, and wont write to disk nor measure anything**/
+  /**Run nsteps1, passing true to this function will be considered as a relaxation run, and wont write to disk nor measure anything**/
   /*Run termalization*/
   run(gcnf.nsteps1, true);
   
 
   /*Change the integrator and run the simulation*/
-  real vis = 1;
-  real rh = 1.0;
-  Matrixf K(3,3);
+  vis = 1;
+  rh = 1.0;
   K.fill_with(0);
-  //int niter = 4; //Number of Lanczos iterations
-  integrator = make_shared<BrownianHydrodynamicsEulerMaruyama>(K, vis, rh, CHOLESKY);//PSE); //LANCZOS, niter);
-
-  integrator->addInteractor(interactor2);
-  
+  integrator = make_shared<BrownianHydrodynamicsEulerMaruyama>(K, vis, rh, CHOLESKY);
+ 
   /**Run nsteps2 with the second integrator, no relaxation**/
+  cout << "#NUMBER PARTICLES " << gcnf.N << endl;
   run(gcnf.nsteps2);
 
 
@@ -94,16 +77,14 @@ SimulationConfig::SimulationConfig(int argc, char* argv[]): Driver(){
 
   cerr<<"\nMean step time: "<<setprecision(5)<<(double)gcnf.nsteps/total_time<<" FPS"<<endl;
   cerr<<"\nSimulation time: "<<setprecision(5)<<total_time<<"s"<<endl;
-
 }
 /*Change the output format here, in this function, the updated positions will be available 
  in CPU. Writing is done in parallel.
 */
 void Writer::write_concurrent(){
-  real3 L = gcnf.L;
   uint N = gcnf.N;
   real4 *posdata = pos.data;
-  cout<<"#Lx="<<L.x*0.5f<<";Ly="<<L.y*0.5f<<";Lz="<<L.z*0.5f<<";\n";
+  cout << N << endl;
   fori(0,N){
     uint type = (uint)(posdata[i].w+0.5);
     cout<<posdata[i].x<<" "<<posdata[i].y<<" "<<posdata[i].z<<" "<<.5f<<" "<<type<<"\n";
