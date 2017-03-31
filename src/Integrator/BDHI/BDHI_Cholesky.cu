@@ -166,6 +166,7 @@ void Cholesky::computeBdW(real3 *BdW, cudaStream_t st){
 	     3*N,
 	     M.d_m, 3*N,
 	     (real*)BdW, 1);
+  status = cublasCreate(&handle);
   if(status){cerr<<"ERROR with cublastrmv!!\n"<<endl; exit(1);}
 }
 
